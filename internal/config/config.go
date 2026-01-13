@@ -95,6 +95,47 @@ func GetSocketPath() string {
 	return filepath.Join(getConfigDir(), DefaultSocketFile)
 }
 
+func GetConfigPath() string {
+	return filepath.Join(getConfigDir(), DefaultConfigFile)
+}
+
+func (c *Config) Save(path string) error {
+	if path == "" {
+		path = GetConfigPath()
+	}
+
+	var usersYaml string
+	for _, u := range c.Telegram.AllowedUsers {
+		usersYaml += fmt.Sprintf("    - %d\n", u)
+	}
+
+	var sessionsYaml string
+	for _, s := range c.Sessions {
+		sessionsYaml += fmt.Sprintf(`  - name: "%s"
+    chat_id: %d
+    working_dir: "%s"
+`, s.Name, s.ChatID, s.WorkingDir)
+	}
+
+	content := fmt.Sprintf(`telegram:
+  allowed_users:
+%s
+timeout: %d
+
+sessions:
+%s`, usersYaml, c.Timeout, sessionsYaml)
+
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return fmt.Errorf("creating config directory: %w", err)
+	}
+
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		return fmt.Errorf("writing config: %w", err)
+	}
+
+	return nil
+}
+
 func (c *Config) FindSessionByName(name string) *SessionConfig {
 	for i := range c.Sessions {
 		if c.Sessions[i].Name == name {
