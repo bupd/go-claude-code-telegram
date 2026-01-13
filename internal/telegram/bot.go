@@ -61,6 +61,10 @@ func (b *Bot) handleMessage(msg *tgbotapi.Message) {
 
 	chatID := msg.Chat.ID
 
+	if b.sessions.TryCaptureChat(chatID) {
+		return
+	}
+
 	if b.sessions.HasPendingForChat(chatID) {
 		replyToMsgID := 0
 		if msg.ReplyToMessage != nil {

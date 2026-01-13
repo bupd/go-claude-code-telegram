@@ -11,9 +11,11 @@ type Request struct {
 type Response struct {
 	Success bool   `json:"success"`
 	Reply   string `json:"reply"`
+	ChatID  int64  `json:"chat_id,omitempty"`
 	Error   string `json:"error,omitempty"`
 }
 
 const (
-	RequestTypeSend = "send"
+	RequestTypeSend      = "send"
+	RequestTypeGetChatID = "get_chat_id"
 )
