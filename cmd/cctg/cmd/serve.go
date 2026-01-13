@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -88,6 +89,8 @@ func handleIPCRequest(req *ipc.Request, cfg *config.Config, sessions *session.Ma
 		return &ipc.Response{Success: false, Error: "session not found"}
 	}
 
+	queued := sessions.PopQueuedMessages(sess.ChatID)
+
 	msgID, err := bot.SendMessage(sess.ChatID, req.Message)
 	if err != nil {
 		return &ipc.Response{Success: false, Error: err.Error()}
@@ -102,13 +105,25 @@ func handleIPCRequest(req *ipc.Request, cfg *config.Config, sessions *session.Ma
 
 	select {
 	case reply := <-pending.ResponseCh:
-		return &ipc.Response{Success: true, Reply: reply}
+		finalReply := combineMessages(queued, reply)
+		return &ipc.Response{Success: true, Reply: finalReply}
 	case <-time.After(time.Duration(timeout) * time.Second):
 		sessions.RemovePending(sess.ChatID, pending)
 		bot.NotifyTimeout(sess.ChatID)
+		if len(queued) > 0 {
+			return &ipc.Response{Success: true, Reply: strings.Join(queued, "\n")}
+		}
 		return &ipc.Response{
 			Success: true,
 			Reply:   "user didn't reply go ahead with caution, don't make huge refactor, check what you are doing",
 		}
 	}
+}
+
+func combineMessages(queued []string, reply string) string {
+	if len(queued) == 0 {
+		return reply
+	}
+	parts := append(queued, reply)
+	return strings.Join(parts, "\n")
 }

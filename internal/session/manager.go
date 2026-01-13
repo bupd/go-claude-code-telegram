@@ -16,16 +16,18 @@ type PendingMessage struct {
 }
 
 type Manager struct {
-	config   *config.Config
-	pending  map[int64][]*PendingMessage // keyed by chat_id
-	mu       sync.RWMutex
-	idSeq    int64
+	config     *config.Config
+	pending    map[int64][]*PendingMessage // keyed by chat_id
+	queuedMsgs map[int64][]string          // messages sent when no pending
+	mu         sync.RWMutex
+	idSeq      int64
 }
 
 func NewManager(cfg *config.Config) *Manager {
 	return &Manager{
-		config:  cfg,
-		pending: make(map[int64][]*PendingMessage),
+		config:     cfg,
+		pending:    make(map[int64][]*PendingMessage),
+		queuedMsgs: make(map[int64][]string),
 	}
 }
 
@@ -121,4 +123,18 @@ func (m *Manager) FindSessionByName(name string) *config.SessionConfig {
 
 func (m *Manager) FindSessionByWorkDir(workDir string) *config.SessionConfig {
 	return m.config.FindSessionByWorkDir(workDir)
+}
+
+func (m *Manager) QueueMessage(chatID int64, text string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.queuedMsgs[chatID] = append(m.queuedMsgs[chatID], text)
+}
+
+func (m *Manager) PopQueuedMessages(chatID int64) []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	msgs := m.queuedMsgs[chatID]
+	delete(m.queuedMsgs, chatID)
+	return msgs
 }

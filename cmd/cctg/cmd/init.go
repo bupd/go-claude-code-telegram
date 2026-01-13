@@ -161,13 +161,13 @@ func runInit(cmd *cobra.Command, args []string) error {
   allowed_users:
     - %d
 
-timeout: 300
+timeout: %d
 
 sessions:
   - name: "%s"
     chat_id: %d
     working_dir: "%s"
-`, userID, sessionName, chatID, workingDir)
+`, userID, timeout, sessionName, chatID, workingDir)
 
 	if err := os.WriteFile(configPath, []byte(configContent), 0600); err != nil {
 		return fmt.Errorf("writing config.yaml: %w", err)
