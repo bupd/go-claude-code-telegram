@@ -74,9 +74,34 @@ func runServe(cmd *cobra.Command, args []string) error {
 }
 
 func handleIPCRequest(req *ipc.Request, cfg *config.Config, sessions *session.Manager, bot *telegram.Bot) *ipc.Response {
-	if req.Type != ipc.RequestTypeSend {
+	switch req.Type {
+	case ipc.RequestTypeGetChatID:
+		return handleGetChatID(req, sessions)
+	case ipc.RequestTypeSend:
+		return handleSend(req, cfg, sessions, bot)
+	default:
 		return &ipc.Response{Success: false, Error: "unknown request type"}
 	}
+}
+
+func handleGetChatID(req *ipc.Request, sessions *session.Manager) *ipc.Response {
+	capture := sessions.StartChatIDCapture()
+
+	timeout := 60
+	if req.Timeout > 0 {
+		timeout = req.Timeout
+	}
+
+	select {
+	case chatID := <-capture.ResponseCh:
+		return &ipc.Response{Success: true, ChatID: chatID}
+	case <-time.After(time.Duration(timeout) * time.Second):
+		sessions.CancelChatIDCapture()
+		return &ipc.Response{Success: false, Error: "timeout waiting for message"}
+	}
+}
+
+func handleSend(req *ipc.Request, cfg *config.Config, sessions *session.Manager, bot *telegram.Bot) *ipc.Response {
 
 	var sess *config.SessionConfig
 	if req.Session != "" {

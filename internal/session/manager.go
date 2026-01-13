@@ -15,12 +15,17 @@ type PendingMessage struct {
 	CreatedAt  time.Time
 }
 
+type ChatIDCapture struct {
+	ResponseCh chan int64
+}
+
 type Manager struct {
-	config     *config.Config
-	pending    map[int64][]*PendingMessage // keyed by chat_id
-	queuedMsgs map[int64][]string          // messages sent when no pending
-	mu         sync.RWMutex
-	idSeq      int64
+	config        *config.Config
+	pending       map[int64][]*PendingMessage // keyed by chat_id
+	queuedMsgs    map[int64][]string          // messages sent when no pending
+	chatIDCapture *ChatIDCapture              // pending chat ID capture request
+	mu            sync.RWMutex
+	idSeq         int64
 }
 
 func NewManager(cfg *config.Config) *Manager {
@@ -137,4 +142,31 @@ func (m *Manager) PopQueuedMessages(chatID int64) []string {
 	msgs := m.queuedMsgs[chatID]
 	delete(m.queuedMsgs, chatID)
 	return msgs
+}
+
+func (m *Manager) StartChatIDCapture() *ChatIDCapture {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.chatIDCapture = &ChatIDCapture{
+		ResponseCh: make(chan int64, 1),
+	}
+	return m.chatIDCapture
+}
+
+func (m *Manager) CancelChatIDCapture() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.chatIDCapture = nil
+}
+
+func (m *Manager) TryCaptureChat(chatID int64) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.chatIDCapture != nil {
+		m.chatIDCapture.ResponseCh <- chatID
+		close(m.chatIDCapture.ResponseCh)
+		m.chatIDCapture = nil
+		return true
+	}
+	return false
 }
