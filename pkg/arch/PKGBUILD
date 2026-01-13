@@ -1,0 +1,39 @@
+pkgname=cctg
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Claude Code Telegram Bot - bridge between Claude Code CLI and Telegram'
+arch=('x86_64')
+url="https://github.com/bupd/go-claude-code-telegram"
+license=('MIT')
+makedepends=('go')
+backup=('etc/cctg/config.yaml')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$pkgname-$pkgver"
+  mkdir -p build/
+}
+
+build() {
+  cd "$pkgname-$pkgver"
+  export CGO_CPPFLAGS="${CPPFLAGS}"
+  export CGO_CFLAGS="${CFLAGS}"
+  export CGO_CXXFLAGS="${CXXFLAGS}"
+  export CGO_LDFLAGS="${LDFLAGS}"
+  export GOFLAGS="-buildmode=pie -trimpath -ldflags=-linkmode=external -mod=readonly -modcacherw"
+  go build -o build/cctg ./cmd/cctg
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  go test ./...
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  install -Dm755 build/cctg "$pkgdir/usr/bin/cctg"
+  install -Dm644 config.yaml.example "$pkgdir/etc/cctg/config.yaml"
+  install -Dm644 deploy/systemd/cctg.service "$pkgdir/usr/lib/systemd/user/cctg.service"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

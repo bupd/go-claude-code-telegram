@@ -1,0 +1,13 @@
+services:
+  cctg:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - ~/.config/cctg/.env
+    volumes:
+      - ~/.config/cctg:/config:ro
+      - cctg-socket:/run/cctg
+    command: ["serve", "--config", "/config/config.yaml"]
+
+volumes:
+  cctg-socket:

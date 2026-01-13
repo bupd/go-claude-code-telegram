@@ -1,0 +1,14 @@
+[Unit]
+Description=Claude Code Telegram Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cctg serve
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=%h/.config/cctg/.env
+
+[Install]
+WantedBy=default.target

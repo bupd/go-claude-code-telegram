@@ -1,0 +1,124 @@
+package session
+
+import (
+	"sync"
+	"time"
+
+	"github.com/bupd/go-claude-code-telegram/internal/config"
+)
+
+type PendingMessage struct {
+	ID         string
+	TgMsgID    int
+	Content    string
+	ResponseCh chan string
+	CreatedAt  time.Time
+}
+
+type Manager struct {
+	config   *config.Config
+	pending  map[int64][]*PendingMessage // keyed by chat_id
+	mu       sync.RWMutex
+	idSeq    int64
+}
+
+func NewManager(cfg *config.Config) *Manager {
+	return &Manager{
+		config:  cfg,
+		pending: make(map[int64][]*PendingMessage),
+	}
+}
+
+func (m *Manager) Config() *config.Config {
+	return m.config
+}
+
+func (m *Manager) AddPending(chatID int64, tgMsgID int, content string) *PendingMessage {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.idSeq++
+	pm := &PendingMessage{
+		ID:         string(rune(m.idSeq)),
+		TgMsgID:    tgMsgID,
+		Content:    content,
+		ResponseCh: make(chan string, 1),
+		CreatedAt:  time.Now(),
+	}
+
+	m.pending[chatID] = append(m.pending[chatID], pm)
+	return pm
+}
+
+func (m *Manager) HandleReply(chatID int64, replyToMsgID int, reply string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	queue, exists := m.pending[chatID]
+	if !exists || len(queue) == 0 {
+		return false
+	}
+
+	var matched *PendingMessage
+	var matchedIdx int
+
+	if replyToMsgID > 0 {
+		for i, pm := range queue {
+			if pm.TgMsgID == replyToMsgID {
+				matched = pm
+				matchedIdx = i
+				break
+			}
+		}
+	}
+
+	if matched == nil {
+		matched = queue[0]
+		matchedIdx = 0
+	}
+
+	matched.ResponseCh <- reply
+	close(matched.ResponseCh)
+
+	m.pending[chatID] = append(queue[:matchedIdx], queue[matchedIdx+1:]...)
+	if len(m.pending[chatID]) == 0 {
+		delete(m.pending, chatID)
+	}
+
+	return true
+}
+
+func (m *Manager) RemovePending(chatID int64, pm *PendingMessage) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	queue, exists := m.pending[chatID]
+	if !exists {
+		return
+	}
+
+	for i, p := range queue {
+		if p.ID == pm.ID {
+			m.pending[chatID] = append(queue[:i], queue[i+1:]...)
+			if len(m.pending[chatID]) == 0 {
+				delete(m.pending, chatID)
+			}
+			return
+		}
+	}
+}
+
+func (m *Manager) HasPendingForChat(chatID int64) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	queue, exists := m.pending[chatID]
+	return exists && len(queue) > 0
+}
+
+func (m *Manager) FindSessionByName(name string) *config.SessionConfig {
+	return m.config.FindSessionByName(name)
+}
+
+func (m *Manager) FindSessionByWorkDir(workDir string) *config.SessionConfig {
+	return m.config.FindSessionByWorkDir(workDir)
+}

@@ -1,0 +1,15 @@
+telegram:
+  bot_token: ""  # Can also use TELEGRAM_BOT_TOKEN env var
+  allowed_users:
+    - 123456789  # Your Telegram user ID
+
+timeout: 300  # seconds (default 5 min)
+
+sessions:
+  - name: "api"
+    chat_id: -100111111  # Telegram chat ID
+    working_dir: "/home/user/projects/api"
+
+  - name: "frontend"
+    chat_id: -100222222
+    working_dir: "/home/user/projects/frontend"
