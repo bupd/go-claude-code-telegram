@@ -21,10 +21,14 @@ Message can be provided as:
   - Arguments: cctg send "your message here"
   - Stdin: echo "your message" | cctg send
 
-Session is auto-detected from working directory, or specify with --session.`,
-	Example: `  cctg send "Should I proceed with the refactor?"
+Session selection:
+  --session <name>  Specify session by name (recommended)
+  (fallback)        Auto-detect from working directory`,
+	Example: `  # Recommended: use --session flag
   cctg send --session myproject "Deploy to production?"
-  echo "Review this change?" | cctg send`,
+
+  # Or via stdin
+  echo "Review this change?" | cctg send --session myproject`,
 	RunE: runSend,
 }
 

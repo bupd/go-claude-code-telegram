@@ -21,27 +21,28 @@ var (
 var sessionCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new session",
-	Long: `Create a new session that maps a working directory to a Telegram chat.
+	Long: `Create a new session that maps a name to a Telegram chat.
 
-When cctg send is called from a directory, it automatically finds the session
-with matching working-dir and sends messages to that chat. This allows
-different projects to use different Telegram chats without specifying --session.
+Use "cctg send --session <name>" to send messages to a specific session.
+Alternatively, working-dir enables auto-detection based on current directory.
 
 Flags:
   --name         Unique session identifier (required)
   --chat-id      Telegram chat ID (auto-detected if daemon running)
-  --working-dir  Project directory that uses this session (required)
+  --working-dir  Project directory for auto-detection (optional)
 
 If --chat-id is not provided and daemon is running, send a message to the
 bot in the target chat to auto-detect the chat ID.
 
 Examples:
-  # Create session for a project (daemon must be running for chat-id detection)
+  # Create session (daemon must be running for chat-id detection)
   cctg session create --name api --working-dir /home/user/api-project
-  # Then from /home/user/api-project, "cctg send" goes to this chat
 
-  # Create with explicit chat ID
-  cctg session create --name api --chat-id 123456789 --working-dir /path/to/project`,
+  # Send using session name (recommended)
+  cctg send --session api "message"
+
+  # Or auto-detect from working directory
+  cd /home/user/api-project && cctg send "message"`,
 	RunE: runSessionCreate,
 }
 
@@ -49,7 +50,7 @@ func init() {
 	sessionCmd.AddCommand(sessionCreateCmd)
 	sessionCreateCmd.Flags().StringVar(&createName, "name", "", "session name (required)")
 	sessionCreateCmd.Flags().Int64Var(&createChatID, "chat-id", 0, "telegram chat ID (auto-detected if not provided)")
-	sessionCreateCmd.Flags().StringVar(&createWorkingDir, "working-dir", "", "project directory that uses this session (required)")
+	sessionCreateCmd.Flags().StringVar(&createWorkingDir, "working-dir", "", "project directory for auto-detection (optional)")
 }
 
 func runSessionCreate(cmd *cobra.Command, args []string) error {
