@@ -1,0 +1,16 @@
+[Unit]
+Description=Claude Code Telegram Bot
+After=network-online.target
+
+[Container]
+Image=localhost/cctg:latest
+EnvironmentFile=%h/.config/cctg/.env
+Volume=%h/.config/cctg:/config:ro
+Volume=cctg-socket.volume:/run/cctg
+Exec=serve --config /config/config.yaml
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
