@@ -28,6 +28,23 @@ cctg init --token BOT_TOKEN --user-id 123456789 --chat-id 123456789 --session-na
   - Private chat: Press Enter during init to use your user ID
   - Group chat: Type `group` during init after adding bot to group and sending a message
 
+## Adding More Sessions
+
+Edit `~/.config/cctg/config.yaml` to add sessions:
+
+```yaml
+sessions:
+  - name: "api"
+    chat_id: 123456789
+    working_dir: "/home/user/projects/api"
+
+  - name: "frontend"
+    chat_id: -100222222  # group chat
+    working_dir: "/home/user/projects/frontend"
+```
+
+Each session maps a working directory to a Telegram chat. Use `--session` flag or run from the working directory for auto-detection.
+
 ## Usage
 
 ```bash
@@ -37,8 +54,11 @@ cctg serve
 # Check status
 cctg status
 
-# Send message (reads stdin, prints reply)
-echo "Should I proceed?" | cctg send --session myproject
+# Send message (auto-detect session from cwd)
+cctg send "Should I proceed?"
+
+# Send with explicit session
+cctg send --session api "Deploy?"
 
 # List sessions
 cctg list
