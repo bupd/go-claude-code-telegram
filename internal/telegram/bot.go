@@ -61,16 +61,15 @@ func (b *Bot) handleMessage(msg *tgbotapi.Message) {
 
 	chatID := msg.Chat.ID
 
-	if !b.sessions.HasPendingForChat(chatID) {
-		return
+	if b.sessions.HasPendingForChat(chatID) {
+		replyToMsgID := 0
+		if msg.ReplyToMessage != nil {
+			replyToMsgID = msg.ReplyToMessage.MessageID
+		}
+		b.sessions.HandleReply(chatID, replyToMsgID, msg.Text)
+	} else {
+		b.sessions.QueueMessage(chatID, msg.Text)
 	}
-
-	replyToMsgID := 0
-	if msg.ReplyToMessage != nil {
-		replyToMsgID = msg.ReplyToMessage.MessageID
-	}
-
-	b.sessions.HandleReply(chatID, replyToMsgID, msg.Text)
 }
 
 func (b *Bot) isAllowedUser(userID int64) bool {
