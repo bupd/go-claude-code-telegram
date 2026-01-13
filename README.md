@@ -28,6 +28,8 @@ cctg init --token BOT_TOKEN --user-id 123456789 --chat-id 123456789 --session-na
   - Private chat: Press Enter during init to use your user ID
   - Group chat: Type `group` during init after adding bot to group and sending a message
 
+**Note:** In group chats, Telegram's privacy settings only allow bots to see messages that are replies to the bot. To receive all messages, disable privacy via @BotFather (`/setprivacy` -> Disable), then remove and re-add the bot to the group.
+
 ## Adding More Sessions
 
 Edit `~/.config/cctg/config.yaml` to add sessions:
