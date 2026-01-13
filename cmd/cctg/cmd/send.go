@@ -13,10 +13,19 @@ import (
 )
 
 var sendCmd = &cobra.Command{
-	Use:   "send",
+	Use:   "send [message]",
 	Short: "Send a message and wait for reply",
-	Long:  "Read message from stdin, send to Telegram, wait for reply, print to stdout.",
-	RunE:  runSend,
+	Long: `Send a message to Telegram and wait for user reply.
+
+Message can be provided as:
+  - Arguments: cctg send "your message here"
+  - Stdin: echo "your message" | cctg send
+
+Session is auto-detected from working directory, or specify with --session.`,
+	Example: `  cctg send "Should I proceed with the refactor?"
+  cctg send --session myproject "Deploy to production?"
+  echo "Review this change?" | cctg send`,
+	RunE: runSend,
 }
 
 func init() {
@@ -24,18 +33,27 @@ func init() {
 }
 
 func runSend(cmd *cobra.Command, args []string) error {
-	scanner := bufio.NewScanner(os.Stdin)
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+	var message string
+
+	if len(args) > 0 {
+		message = strings.Join(args, " ")
+	} else {
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			scanner := bufio.NewScanner(os.Stdin)
+			var lines []string
+			for scanner.Scan() {
+				lines = append(lines, scanner.Text())
+			}
+			if err := scanner.Err(); err != nil {
+				return fmt.Errorf("reading stdin: %w", err)
+			}
+			message = strings.Join(lines, "\n")
+		}
 	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("reading stdin: %w", err)
-	}
-	message := strings.Join(lines, "\n")
 
 	if message == "" {
-		return fmt.Errorf("no message provided")
+		return fmt.Errorf("message required: cctg send \"your message\" or echo \"message\" | cctg send")
 	}
 
 	client := ipc.NewClient(config.GetSocketPath())

@@ -23,8 +23,10 @@ cctg init --token BOT_TOKEN --user-id 123456789 --chat-id 123456789 --session-na
 ### Getting IDs
 
 - **Bot token**: Create bot via [@BotFather](https://t.me/BotFather)
-- **User ID**: Send message to [@userinfobot](https://t.me/userinfobot)
-- **Chat ID**: For private chat use your user ID, for groups check `https://api.telegram.org/bot<TOKEN>/getUpdates`
+- **User ID**: Enter your `@username` during init (sends /start to bot first) or get from [@userinfobot](https://t.me/userinfobot)
+- **Chat ID**:
+  - Private chat: Press Enter during init to use your user ID
+  - Group chat: Type `group` during init after adding bot to group and sending a message
 
 ## Usage
 
